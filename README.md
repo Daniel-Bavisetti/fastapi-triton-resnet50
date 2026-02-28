@@ -1,4 +1,4 @@
-# upjao-triton-inference
+# Production-Ready ML Inference API — FastAPI & NVIDIA Triton Inference Server
 [![GitHub](https://img.shields.io/badge/GitHub-ml--inference--server-blue)](https://github.com/Daniel-Bavisetti/fastapi-triton-resnet50)
 
 Production-ready FastAPI + NVIDIA Triton Inference Server integration for serving ResNet50-v1-7.
