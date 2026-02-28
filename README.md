@@ -194,6 +194,26 @@ Configured test:
 locust -f load_tests/locust_test.py --host http://localhost:8080
 ```
 
+## Load Test Results
+
+### Locust - 10 Concurrent Users (60 seconds)
+
+![Locust Load Test Results](load_tests/locust_results/res_1.png)
+
+**Key Metrics:**
+| Metric | Value |
+|--------|-------|
+| Total Requests | 130 |
+| Failed Requests | 0 (0.00%) |
+| Avg Response Time | 122ms |
+| Min Response Time | 68ms |
+| Max Response Time | 388ms |
+| p50 Latency | 110ms |
+| p95 Latency | 200ms |
+| p99 Latency | 220ms |
+| Throughput | ~2.19 req/s |
+| Concurrent Users | 10 |
+
 Open `http://localhost:8089`, start load and monitor `/predict` latency.
 
 ### Sample Expected Output
