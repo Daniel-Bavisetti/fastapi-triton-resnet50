@@ -1,0 +1,72 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: upjao-triton
+  labels:
+    app: upjao-triton
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: upjao-triton
+  template:
+    metadata:
+      labels:
+        app: upjao-triton
+    spec:
+      containers:
+      - name: triton
+        image: nvcr.io/nvidia/tritonserver:23.10-py3
+        args: ["tritonserver", "--model-repository=/models"]
+        ports:
+        - containerPort: 8000
+          name: http
+        - containerPort: 8001
+          name: grpc
+        - containerPort: 8002
+          name: metrics
+        volumeMounts:
+        - name: model-repo
+          mountPath: /models
+        readinessProbe:
+          httpGet:
+            path: /v2/health/ready
+            port: 8000
+          initialDelaySeconds: 20
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /v2/health/live
+            port: 8000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        resources:
+          requests:
+            cpu: 1
+            memory: 2Gi
+          limits:
+            cpu: 4
+            memory: 8Gi
+      volumes:
+      - name: model-repo
+        persistentVolumeClaim:
+          claimName: triton-model-repo-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: upjao-triton
+spec:
+  selector:
+    app: upjao-triton
+  ports:
+  - name: http
+    port: 8000
+    targetPort: 8000
+  - name: grpc
+    port: 8001
+    targetPort: 8001
+  - name: metrics
+    port: 8002
+    targetPort: 8002
+  type: ClusterIP

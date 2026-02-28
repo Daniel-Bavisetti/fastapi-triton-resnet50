@@ -1,0 +1,31 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# Env files
+.env
+
+# Test and coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Runtime
+*.log
+
+# Model artifacts
+triton_models/**/model.plan
+triton_models/**/model.pt
+triton_models/resnet50/1/model.onnx
+triton_models/resnet50/1/resnet50-v1-7.onnx

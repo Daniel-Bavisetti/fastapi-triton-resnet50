@@ -1,0 +1,13 @@
+fastapi
+uvicorn[standard]
+tritonclient[http,grpc]
+numpy
+pillow
+opencv-python-headless
+prometheus-client
+pydantic-settings
+python-multipart
+httpx
+locust
+grpcio
+huggingface-hub>=0.23.0
