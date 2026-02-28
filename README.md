@@ -3,6 +3,41 @@
 
 Production-ready FastAPI + NVIDIA Triton Inference Server integration for serving ResNet50-v1-7.
 
+## Architecture Overview
+
+```
+                        ┌─────────────────────────────────────┐
+                        │           Docker Network             │
+                        │                                      │
+┌──────────┐            │  ┌─────────────┐  ┌──────────────┐  │
+│  Client  │──HTTP POST─┼─▶│   FastAPI   │  │    Triton    │  │
+│          │            │  │  :8080      │  │    Server    │  │
+│ /predict │            │  │             │  │    :8000     │  │
+│ /health  │            │  │ ┌─────────┐ │  │              │  │
+│ /metrics │            │  │ │ Router  │ │  │ ┌──────────┐ │  │
+└──────────┘            │  │ │ Service │─┼──┼▶│ ResNet50 │ │  │
+                        │  │ │ Schema  │ │  │ │  (ONNX)  │ │  │
+                        │  │ └─────────┘ │  │ └──────────┘ │  │
+                        │  │             │  │              │  │
+                        │  │ Prometheus  │  │ Dynamic      │  │
+                        │  │ Metrics     │  │ Batching     │  │
+                        │  └─────────────┘  └──────────────┘  │
+                        │                                      │
+                        │  ┌──────────────────────────────┐   │
+                        │  │     docker-compose.yml       │   │
+                        │  │  fastapi + triton services   │   │
+                        │  └──────────────────────────────┘   │
+                        └─────────────────────────────────────┘
+```
+
+**Request Flow:**
+1. Client sends POST /predict with image file
+2. FastAPI validates and preprocesses image (224x224, normalized)
+3. FastAPI sends tensor to Triton via HTTP client
+4. Triton runs ResNet50 ONNX inference with dynamic batching
+5. FastAPI applies softmax, extracts top-5 predictions
+6. JSON response returned to client with latency metrics
+
 ## 1. Architecture Overview
 
 ```text
@@ -257,12 +292,73 @@ kubectl get svc
 kubectl get hpa
 ```
 
-## 7. Horizontal Scaling Strategy
+## Horizontal Scaling Strategy
 
-- FastAPI is stateless; requests can be distributed across replicas safely.
-- HPA scales FastAPI based on CPU utilization (target 70%, min 2, max 10).
-- Triton handles batching internally (`dynamic_batching`) to improve throughput.
-- For larger workloads, scale Triton with model-instance and node-level strategies, and pin model replicas close to compute resources.
+### Current Setup (Single Node)
+```
+Client → FastAPI (4 workers) → Triton (2 CPU instances)
+```
+
+### Horizontal Scaling with Kubernetes
+
+The system is designed to scale horizontally at both the FastAPI and 
+Triton layers independently.
+
+**FastAPI Scaling:**
+- Stateless design — no session data stored in memory
+- Scale replicas freely behind a load balancer
+- HPA configured in `k8s/hpa.yaml` triggers at 70% CPU utilization
+
+**Triton Scaling:**
+- Each Triton pod loads the model independently
+- Use shared model repository (S3/GCS/NFS) across pods
+- Dynamic batching reduces total pods needed by grouping requests
+
+**Kubernetes Setup:**
+```bash
+# Deploy both services
+kubectl apply -f k8s/triton-deployment.yaml
+kubectl apply -f k8s/fastapi-deployment.yaml
+kubectl apply -f k8s/hpa.yaml
+
+# Monitor scaling
+kubectl get hpa
+kubectl get pods
+```
+
+**Scaling Architecture:**
+```
+                    ┌─────────────────────────────┐
+                    │      Kubernetes Cluster      │
+                    │                              │
+Internet ──▶ LoadBalancer                         │
+                    │       ┌──────────────────┐   │
+                    │       │   FastAPI Pods   │   │
+                    │  ┌───▶│   (HPA: 1-10)   │   │
+                    │  │    └────────┬─────────┘   │
+                    │  │             │              │
+                    │  │    ┌────────▼─────────┐   │
+                    │  │    │   Triton Pods    │   │
+                    │  │    │   (HPA: 1-5)    │   │
+                    │  │    └────────┬─────────┘   │
+                    │  │             │              │
+                    │  │    ┌────────▼─────────┐   │
+                    │  │    │  Model Storage   │   │
+                    │  │    │  (S3 / NFS)      │   │
+                    │  │    └──────────────────┘   │
+                    └──┼─────────────────────────  ┘
+                       │
+                  Prometheus
+                  + Grafana
+                  (Monitoring)
+```
+
+**Expected throughput gains:**
+| Replicas | Estimated RPS | p95 Latency |
+|----------|--------------|-------------|
+| 1 FastAPI + 1 Triton | ~2.2 req/s | 200ms |
+| 3 FastAPI + 2 Triton | ~6.5 req/s | 180ms |
+| 5 FastAPI + 3 Triton | ~10+ req/s | 160ms |
 
 ## Hardware Specifications
 
