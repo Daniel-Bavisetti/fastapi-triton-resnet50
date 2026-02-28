@@ -37,19 +37,15 @@ export default function () {
 }
 
 export function handleSummary(data) {
-  const rps = data.metrics.http_reqs.rate;
-  const p95 = data.metrics.http_req_duration["p(95)"];
-  const failRate = data.metrics.http_req_failed.rate;
+  const p95 = data.metrics.http_req_duration.values["p(95)"];
+  const failRate = data.metrics.http_req_failed.values.rate;
+  const rps = data.metrics.http_reqs.values.rate;
 
-  const summary = [
-    "\n=== k6 Summary ===",
-    `RPS: ${rps.toFixed(2)}`,
-    `Latency p95 (ms): ${p95.toFixed(2)}`,
-    `Failure rate: ${(failRate * 100).toFixed(2)}%`,
-    "==================\n",
-  ].join("\n");
+  console.log("=== k6 Summary ===");
+  console.log(`RPS: ${rps ? rps.toFixed(2) : 0}`);
+  console.log(`Latency p95 (ms): ${p95 ? p95.toFixed(2) : 0}`);
+  console.log(`Failure rate: ${failRate ? (failRate * 100).toFixed(2) : 0}%`);
+  console.log("==================");
 
-  return {
-    stdout: summary,
-  };
+  return {};
 }
