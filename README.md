@@ -199,6 +199,8 @@ locust -f load_tests/locust_test.py --host http://localhost:8080
 ### Locust - 10 Concurrent Users (60 seconds)
 
 ![Locust Load Test Results](load_tests/locust_results/res_1.png)
+![Locust Load Test Results](load_tests/locust_results/res-2.png)
+![Locust Load Test Results](load_tests/locust_results/res-3.png)
 
 **Key Metrics:**
 | Metric | Value |
