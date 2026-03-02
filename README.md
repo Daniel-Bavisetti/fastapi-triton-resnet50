@@ -1,28 +1,41 @@
 # Production-Ready ML Inference API — FastAPI & NVIDIA Triton Inference Server
 [![GitHub](https://img.shields.io/badge/GitHub-ml--inference--server-blue)](https://github.com/Daniel-Bavisetti/fastapi-triton-resnet50)
 
+## MAX CONCURRENT USERS (ESTIMATED)
+### CPU: ~50 users
+### GPU: ~250 users
+
+Calculation basis:
+- Measured CPU throughput from k6: ~45.2 req/s
+- Approximation: 1 active user ~= 1 req/s sustained traffic
+- CPU estimate rounded to ~50 users
+- GPU estimate assumes ~5x throughput vs CPU for ResNet50 inference (therefore ~250 users)
+
+> Note: 10 concurrent users are explicitly load-tested in this repo; values above are capacity estimates.
+
+
 Production-ready FastAPI + NVIDIA Triton Inference Server integration for serving ResNet50-v1-7.
 
 ## Architecture Overview
 
 ```
                         ┌─────────────────────────────────────┐
-                        │           Docker Network             │
-                        │                                      │
+                        │           Docker Network            │
+                        │                                     │
 ┌──────────┐            │  ┌─────────────┐  ┌──────────────┐  │
 │  Client  │──HTTP POST─┼─▶│   FastAPI   │  │    Triton    │  │
 │          │            │  │  :8080      │  │    Server    │  │
 │ /predict │            │  │             │  │    :8000     │  │
 │ /health  │            │  │ ┌─────────┐ │  │              │  │
 │ /metrics │            │  │ │ Router  │ │  │ ┌──────────┐ │  │
-└──────────┘            │  │ │ Service │─┼──┼▶│ ResNet50 │ │  │
+└──────────┘            │  │ │ Service │─┼──┼▶│ ResNet50 │ │ │
                         │  │ │ Schema  │ │  │ │  (ONNX)  │ │  │
                         │  │ └─────────┘ │  │ └──────────┘ │  │
                         │  │             │  │              │  │
                         │  │ Prometheus  │  │ Dynamic      │  │
                         │  │ Metrics     │  │ Batching     │  │
                         │  └─────────────┘  └──────────────┘  │
-                        │                                      │
+                        │                                     │
                         │  ┌──────────────────────────────┐   │
                         │  │     docker-compose.yml       │   │
                         │  │  fastapi + triton services   │   │
@@ -231,7 +244,7 @@ locust -f load_tests/locust_test.py --host http://localhost:8080
 
 ## Load Test Results
 
-### Locust - 10 Concurrent Users (60 seconds)
+### Locust - 10 Concurrent Users 
 
 ![Locust Load Test Results](load_tests/locust_results/res_1.png)
 ![Locust Load Test Results](load_tests/locust_results/res-2.png)
