@@ -249,6 +249,7 @@ locust -f load_tests/locust_test.py --host http://localhost:8080
 ![Locust Load Test Results](load_tests/locust_results/res_1.png)
 ![Locust Load Test Results](load_tests/locust_results/res-2.png)
 ![Locust Load Test Results](load_tests/locust_results/res-3.png)
+### k6 Load Test Result 
 ![k6 Load Test Result](load_tests/k6_result.png)
 
 **Key Metrics:**
